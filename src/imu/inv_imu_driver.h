@@ -35,13 +35,13 @@
 extern "C" {
 #endif
 
-#include "imu/inv_imu_defs.h"
-#include "imu/inv_imu_transport.h"
-
-#include "Invn/InvError.h"
-
+#include <Arduino.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "Invn/InvError.h"
+#include "imu/inv_imu_defs.h"
+#include "imu/inv_imu_transport.h"
 
 /** Max FSR values for accel */
 #define ACCEL_CONFIG0_FS_SEL_MAX ACCEL_CONFIG0_FS_SEL_16g
@@ -56,7 +56,7 @@ extern "C" {
 #define GYRO_OFFUSER_MAX_DPS 64
 
 /** Max buffer size mirrored from FIFO at polling time */
-#define FIFO_MIRRORING_SIZE 16 * 258 // packet size * max_count = 4kB
+#define FIFO_MIRRORING_SIZE 16 * 258  // packet size * max_count = 4kB
 
 /** Accel start-up time */
 #define ACC_STARTUP_TIME_US 10000
@@ -69,83 +69,83 @@ extern "C" {
 
 /** Sensor identifier for UI control function */
 enum inv_imu_sensor {
-	INV_SENSOR_ACCEL, /**< Accelerometer */
-	INV_SENSOR_GYRO, /**< Gyroscope */
-	INV_SENSOR_FSYNC_EVENT, /**< FSYNC */
-	INV_SENSOR_TEMPERATURE, /**< Chip temperature */
-	INV_SENSOR_DMP_PEDOMETER_EVENT, /**< Pedometer: step detected */
-	INV_SENSOR_DMP_PEDOMETER_COUNT, /**< Pedometer: step counter */
-	INV_SENSOR_DMP_TILT, /**< Tilt */
-	INV_SENSOR_DMP_FF, /**< FreeFall */
-	INV_SENSOR_DMP_LOWG, /**< Low G */
-	INV_SENSOR_DMP_SMD, /**< Significant Motion Detection */
-	INV_SENSOR_MAX
+    INV_SENSOR_ACCEL,               /**< Accelerometer */
+    INV_SENSOR_GYRO,                /**< Gyroscope */
+    INV_SENSOR_FSYNC_EVENT,         /**< FSYNC */
+    INV_SENSOR_TEMPERATURE,         /**< Chip temperature */
+    INV_SENSOR_DMP_PEDOMETER_EVENT, /**< Pedometer: step detected */
+    INV_SENSOR_DMP_PEDOMETER_COUNT, /**< Pedometer: step counter */
+    INV_SENSOR_DMP_TILT,            /**< Tilt */
+    INV_SENSOR_DMP_FF,              /**< FreeFall */
+    INV_SENSOR_DMP_LOWG,            /**< Low G */
+    INV_SENSOR_DMP_SMD,             /**< Significant Motion Detection */
+    INV_SENSOR_MAX
 };
 
 /** Configure Fifo usage */
 typedef enum {
-	INV_IMU_FIFO_DISABLED = 0, /**< Fifo is disabled and data source is sensors registers */
-	INV_IMU_FIFO_ENABLED  = 1, /**< Fifo is used as data source */
+    INV_IMU_FIFO_DISABLED = 0, /**< Fifo is disabled and data source is sensors registers */
+    INV_IMU_FIFO_ENABLED = 1,  /**< Fifo is used as data source */
 } INV_IMU_FIFO_CONFIG_t;
 
 /** Sensor event structure definition */
 typedef struct {
-	int      sensor_mask;
-	uint16_t timestamp_fsync;
-	int16_t  accel[3];
-	int16_t  gyro[3];
-	int16_t  temperature;
-	int8_t   accel_high_res[3];
-	int8_t   gyro_high_res[3];
+    int sensor_mask;
+    uint16_t timestamp_fsync;
+    int16_t accel[3];
+    int16_t gyro[3];
+    int16_t temperature;
+    int8_t accel_high_res[3];
+    int8_t gyro_high_res[3];
 } inv_imu_sensor_event_t;
 
 /** IMU driver states definition */
 struct inv_imu_device {
-	/** Transport layer. 
-	 *  @warning Must be the first one of struct inv_imu_device 
-	 */
-	struct inv_imu_transport transport;
+    /** Transport layer.
+     *  @warning Must be the first one of struct inv_imu_device
+     */
+    struct inv_imu_transport transport;
 
-	/** callback executed by:
-	 *  * inv_imu_get_data_from_fifo (if FIFO is used).
-	 *  * inv_imu_get_data_from_registers (if FIFO isn't used).
-	 *  May be NULL if above API are not used by application 
-	 */
-	void (*sensor_event_cb)(inv_imu_sensor_event_t *event);
+    /** callback executed by:
+     *  * inv_imu_get_data_from_fifo (if FIFO is used).
+     *  * inv_imu_get_data_from_registers (if FIFO isn't used).
+     *  May be NULL if above API are not used by application
+     */
+    void (*sensor_event_cb)(inv_imu_sensor_event_t *event);
 
-	
-	uint8_t fifo_data[FIFO_MIRRORING_SIZE]; /**< FIFO mirroring memory area */
-	uint8_t dmp_is_on; /**< DMP started status */
-	uint8_t endianness_data; /**< Data endianness configuration */
-	uint8_t fifo_highres_enabled; /**< Highres mode configuration */
-	INV_IMU_FIFO_CONFIG_t fifo_is_used; /**< FIFO configuration */
-    uint64_t gyro_start_time_us; /**< Gyro start time used to discard first samples */
-	uint64_t accel_start_time_us; /**< Accel start time used to discard first samples */
-	uint64_t gyro_power_off_tmst; /**< Gyro power off time */
+    uint8_t fifo_data[FIFO_MIRRORING_SIZE]; /**< FIFO mirroring memory area */
+    uint8_t dmp_is_on;                      /**< DMP started status */
+    uint8_t endianness_data;                /**< Data endianness configuration */
+    uint8_t fifo_highres_enabled;           /**< Highres mode configuration */
+    INV_IMU_FIFO_CONFIG_t fifo_is_used;     /**< FIFO configuration */
+    uint64_t gyro_start_time_us;            /**< Gyro start time used to discard first samples */
+    uint64_t accel_start_time_us;           /**< Accel start time used to discard first samples */
+    uint64_t gyro_power_off_tmst;           /**< Gyro power off time */
 };
 
 /** Interrupt enum state for INT1, INT2, and IBI */
-typedef enum {
-	INV_IMU_DISABLE = 0, 
-	INV_IMU_ENABLE 
-} inv_imu_interrupt_value;
+typedef enum { INV_IMU_DISABLE = 0, INV_IMU_ENABLE } inv_imu_interrupt_value;
 
 /** Interrupt definition */
 typedef struct {
-	inv_imu_interrupt_value INV_UI_FSYNC;
-	inv_imu_interrupt_value INV_UI_DRDY;
-	inv_imu_interrupt_value INV_FIFO_THS;
-	inv_imu_interrupt_value INV_FIFO_FULL;
-	inv_imu_interrupt_value INV_SMD;
-	inv_imu_interrupt_value INV_WOM_X;
-	inv_imu_interrupt_value INV_WOM_Y;
-	inv_imu_interrupt_value INV_WOM_Z;
-	inv_imu_interrupt_value INV_FF;
-	inv_imu_interrupt_value INV_LOWG;
-	inv_imu_interrupt_value INV_STEP_DET;
-	inv_imu_interrupt_value INV_STEP_CNT_OVFL;
-	inv_imu_interrupt_value INV_TILT_DET;
+    inv_imu_interrupt_value INV_UI_FSYNC;
+    inv_imu_interrupt_value INV_UI_DRDY;
+    inv_imu_interrupt_value INV_FIFO_THS;
+    inv_imu_interrupt_value INV_FIFO_FULL;
+    inv_imu_interrupt_value INV_SMD;
+    inv_imu_interrupt_value INV_WOM_X;
+    inv_imu_interrupt_value INV_WOM_Y;
+    inv_imu_interrupt_value INV_WOM_Z;
+    inv_imu_interrupt_value INV_FF;
+    inv_imu_interrupt_value INV_LOWG;
+    inv_imu_interrupt_value INV_STEP_DET;
+    inv_imu_interrupt_value INV_STEP_CNT_OVFL;
+    inv_imu_interrupt_value INV_TILT_DET;
 } inv_imu_interrupt_parameter_t;
+
+void inv_imu_sleep_us(uint32_t us);
+
+uint64_t inv_imu_get_time_us(void);
 
 /** @brief Initializes device.
  *  @param[in] s                Pointer to device.
@@ -153,8 +153,7 @@ typedef struct {
  *  @param[in] sensor_event_cb  Callback executed when a new sensor event is available. *
  *  @return                     0 on success, negative value on error.
  */
-int inv_imu_init(struct inv_imu_device *s, struct inv_imu_serif *serif,
-                 void (*sensor_event_cb)(inv_imu_sensor_event_t *event));
+int inv_imu_init(struct inv_imu_device *s, struct inv_imu_serif *serif, void (*sensor_event_cb)(inv_imu_sensor_event_t *event));
 
 /** @brief Reset device by reloading OTPs.
  *  @param[in] s  Pointer to device.
@@ -201,8 +200,8 @@ int inv_imu_disable_gyro(struct inv_imu_device *s);
 
 /** @brief Enable fsync tagging functionality.
  *         * Enables fsync.
- *         * Enables timestamp to registers. Once fsync is enabled fsync counter is pushed to 
- *           fifo instead of timestamp. So timestamp is made available in registers. Note that 
+ *         * Enables timestamp to registers. Once fsync is enabled fsync counter is pushed to
+ *           fifo instead of timestamp. So timestamp is made available in registers. Note that
  *           this increase power consumption.
  *         * Enables fsync related interrupt.
  *  @param[in] s  Pointer to device.
@@ -212,8 +211,8 @@ int inv_imu_enable_fsync(struct inv_imu_device *s);
 
 /** @brief Disable fsync tagging functionality.
  *         * Disables fsync.
- *         * Disables timestamp to registers. Once fsync is disabled  timestamp is pushed to fifo 
- *           instead of fsync counter. So in order to decrease power consumption, timestamp is no 
+ *         * Disables timestamp to registers. Once fsync is disabled  timestamp is pushed to fifo
+ *           instead of fsync counter. So in order to decrease power consumption, timestamp is no
  *           more available in registers.
  *         * Disables fsync related interrupt.
  *  @param[in] s  Pointer to device.
@@ -226,43 +225,39 @@ int inv_imu_disable_fsync(struct inv_imu_device *s);
  *  @param[in] interrupt_to_configure  Structure with the corresponding state to manage INT1.
  *  @return                            0 on success, negative value on error.
  */
-int inv_imu_set_config_int1(struct inv_imu_device *        s,
-                            inv_imu_interrupt_parameter_t *interrupt_to_configure);
+int inv_imu_set_config_int1(struct inv_imu_device *s, inv_imu_interrupt_parameter_t *interrupt_to_configure);
 
 /** @brief Retrieve interrupts configuration.
  *  @param[in] s                       Pointer to device.
  *  @param[in] interrupt_to_configure  Structure with the corresponding state to manage INT1.
  *  @return                            0 on success, negative value on error.
  */
-int inv_imu_get_config_int1(struct inv_imu_device *        s,
-                            inv_imu_interrupt_parameter_t *interrupt_to_configure);
+int inv_imu_get_config_int1(struct inv_imu_device *s, inv_imu_interrupt_parameter_t *interrupt_to_configure);
 
 /** @brief  Configure which interrupt source can trigger INT2.
  *  @param[in] s                       Pointer to device.
  *  @param[in] interrupt_to_configure  Structure with the corresponding state to INT2.
  *  @return                            0 on success, negative value on error.
  */
-int inv_imu_set_config_int2(struct inv_imu_device *        s,
-                            inv_imu_interrupt_parameter_t *interrupt_to_configure);
+int inv_imu_set_config_int2(struct inv_imu_device *s, inv_imu_interrupt_parameter_t *interrupt_to_configure);
 
 /** @brief  Retrieve interrupts configuration.
  *  @param[in] s                       Pointer to device.
  *  @param[in] interrupt_to_configure  Structure with the corresponding state to manage INT2.
  *  @return                            0 on success, negative value on error.
  */
-int inv_imu_get_config_int2(struct inv_imu_device *        s,
-                            inv_imu_interrupt_parameter_t *interrupt_to_configure);
+int inv_imu_get_config_int2(struct inv_imu_device *s, inv_imu_interrupt_parameter_t *interrupt_to_configure);
 
-/** @brief Read all registers containing data (temperature, accelerometer and gyroscope). 
+/** @brief Read all registers containing data (temperature, accelerometer and gyroscope).
  *         Then it calls sensor_event_cb function passed at init for each packet.
  *  @param[in] s  Pointer to device.
  *  @return       0 on success, negative value on error.
  */
 int inv_imu_get_data_from_registers(struct inv_imu_device *s);
 
-/** @brief Read all available packets from the FIFO. 
- *         For each packet function builds a sensor event containing packet data 
- *         and validity information. Then it calls sensor_event_cb funtion passed 
+/** @brief Read all available packets from the FIFO.
+ *         For each packet function builds a sensor event containing packet data
+ *         and validity information. Then it calls sensor_event_cb funtion passed
  *         at init for each packet.
  *  @param[in] s  Pointer to device.
  *  @return       Number of valid packets read on success, negative value on error.
@@ -306,7 +301,7 @@ int inv_imu_get_accel_fsr(struct inv_imu_device *s, ACCEL_CONFIG0_FS_SEL_t *acce
 /** @brief Set gyro full scale range.
  *  @param[in] s             Pointer to device.
  *  @param[in] gyro_fsr_dps  Requested full scale range.
-*   @return                  0 on success, negative value on error.
+ *   @return                  0 on success, negative value on error.
  */
 int inv_imu_set_gyro_fsr(struct inv_imu_device *s, GYRO_CONFIG0_FS_SEL_t gyro_fsr_dps);
 
@@ -343,8 +338,7 @@ int inv_imu_set_gyro_ln_bw(struct inv_imu_device *s, GYRO_CONFIG1_GYRO_FILT_BW_t
  *  @param[in] timestamp_resol  Requested timestamp resolution.
  *  @return                     0 on success, negative value on error.
  */
-int inv_imu_set_timestamp_resolution(struct inv_imu_device *    s,
-                                     const TMST_CONFIG1_RESOL_t timestamp_resol);
+int inv_imu_set_timestamp_resolution(struct inv_imu_device *s, const TMST_CONFIG1_RESOL_t timestamp_resol);
 
 /** @brief Reset IMU fifo.
  *  @param[in] s  Pointer to device.
@@ -365,12 +359,12 @@ int inv_imu_enable_high_resolution_fifo(struct inv_imu_device *s);
 int inv_imu_disable_high_resolution_fifo(struct inv_imu_device *s);
 
 /** @brief Configure Fifo.
-  *  @param[in] s            Pointer to device.
-  *  @param[in] fifo_config  Fifo configuration method.
-  *                          Enabled: data are pushed to FIFO and FIFO THS interrupt is set.
-  *                          Disabled: data are not pused to FIFO and DRDY interrupt is set.
-  *  @return                 0 on success, negative value on error.
-  */
+ *  @param[in] s            Pointer to device.
+ *  @param[in] fifo_config  Fifo configuration method.
+ *                          Enabled: data are pushed to FIFO and FIFO THS interrupt is set.
+ *                          Disabled: data are not pused to FIFO and DRDY interrupt is set.
+ *  @return                 0 on success, negative value on error.
+ */
 int inv_imu_configure_fifo(struct inv_imu_device *s, INV_IMU_FIFO_CONFIG_t fifo_config);
 
 /** @brief Get timestamp resolution
@@ -385,19 +379,17 @@ uint32_t inv_imu_get_timestamp_resolution_us(struct inv_imu_device *s);
  *  @param[in] wom_y_th  Threshold value for the Wake on Motion Interrupt for Y-axis accel.
  *  @param[in] wom_z_th  Threshold value for the Wake on Motion Interrupt for Z-axis accel.
  *  @param[in] wom_int   Select which mode between AND/OR is used to generate interrupt.
- *  @param[in] wom_dur   Select the number of overthreshold event to wait 
+ *  @param[in] wom_dur   Select the number of overthreshold event to wait
  *                       before generating interrupt.
  *  @return              0 on success, negative value on error.
  */
-int inv_imu_configure_wom(struct inv_imu_device *s, const uint8_t wom_x_th, const uint8_t wom_y_th,
-                          const uint8_t wom_z_th, WOM_CONFIG_WOM_INT_MODE_t wom_int,
-                          WOM_CONFIG_WOM_INT_DUR_t wom_dur);
+int inv_imu_configure_wom(struct inv_imu_device *s, const uint8_t wom_x_th, const uint8_t wom_y_th, const uint8_t wom_z_th, WOM_CONFIG_WOM_INT_MODE_t wom_int, WOM_CONFIG_WOM_INT_DUR_t wom_dur);
 
 /** @brief Enable Wake On Motion.
- *         WoM requests to have the accelerometer enabled to work. 
+ *         WoM requests to have the accelerometer enabled to work.
  *         As a consequence Fifo water-mark interrupt is disabled to only trigger WoM interrupts.
- *         To have good performance, it's recommended to set accel ODR to 20ms 
- *         and in Low Power Mode. 
+ *         To have good performance, it's recommended to set accel ODR to 20ms
+ *         and in Low Power Mode.
  *  @param[in] s  Pointer to device.
  *  @return       0 on success, negative value on error.
  */
